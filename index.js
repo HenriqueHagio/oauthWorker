@@ -19,7 +19,7 @@ export default {
     }
 
     // GET /auth/callback → troca code por token
-    if (url.pathname === '/auth/callback') {
+    if (url.pathname.startsWith('/auth/callback')) {
       const code = url.searchParams.get('code');
 
       if (!code) {
