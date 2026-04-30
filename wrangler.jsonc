@@ -9,7 +9,7 @@
 
   // Rotas que este worker vai interceptar no domínio do site
   "routes": [
-    { "pattern": "seusite.com/oauth/*", "zone_name": "seusite.com" }
+    { "pattern": "https://atelierdanca.com.br/oauth/*", "zone_name": "https://atelierdanca.com.br/" }
   ]
 
   // Variáveis secretas — NÃO coloque os valores aqui.
