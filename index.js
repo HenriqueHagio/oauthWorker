@@ -1,47 +1,33 @@
-/**
- * oauth-worker/index.js
- * Cloudflare Worker — intermediário OAuth para o Decap CMS com GitHub.
- *
- * Deploy como Worker separado (não como Pages Function).
- * Rotas:
- *   GET  /oauth/authorize  → redireciona para GitHub OAuth
- *   GET  /oauth/callback   → troca code por token e retorna ao CMS
- *
- * Variáveis de ambiente (definidas no painel Cloudflare → Workers → Settings → Variables):
- *   GITHUB_CLIENT_ID      → Client ID do GitHub OAuth App
- *   GITHUB_CLIENT_SECRET  → Client Secret do GitHub OAuth App
- *   ALLOWED_ORIGIN        → https://seusite.com
- */
-
+// oauth-worker/index.js
 const GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize';
 const GITHUB_TOKEN_URL     = 'https://github.com/login/oauth/access_token';
 const SCOPE                = 'repo,user';
+const ORIGIN               = 'https://atelierdanca.com.br';
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // ── 1. Inicia o fluxo OAuth ──────────────────────────────────
-    if (url.pathname === '/oauth/authorize') {
+    // GET /auth/authorize → inicia OAuth
+    if (url.pathname === '/auth/authorize') {
       const params = new URLSearchParams({
         client_id:    env.GITHUB_CLIENT_ID,
         scope:        SCOPE,
-        redirect_uri: `${env.ALLOWED_ORIGIN}/oauth/callback`,
+        redirect_uri: `${ORIGIN}/auth/callback`,
       });
       return Response.redirect(`${GITHUB_AUTHORIZE_URL}?${params}`, 302);
     }
 
-    // ── 2. Callback: troca code por token ────────────────────────
-    if (url.pathname === '/oauth/callback') {
+    // GET /auth/callback → troca code por token
+    if (url.pathname === '/auth/callback') {
       const code = url.searchParams.get('code');
 
       if (!code) {
         return new Response('Código OAuth ausente.', { status: 400 });
       }
 
-      // Troca o code pelo token junto ao GitHub
       const tokenRes = await fetch(GITHUB_TOKEN_URL, {
-        method:  'POST',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept':       'application/json',
@@ -50,19 +36,19 @@ export default {
           client_id:     env.GITHUB_CLIENT_ID,
           client_secret: env.GITHUB_CLIENT_SECRET,
           code,
-          redirect_uri:  `${env.ALLOWED_ORIGIN}/oauth/callback`,
+          redirect_uri:  `${ORIGIN}/auth/callback`,
         }),
       });
 
       const data = await tokenRes.json();
 
       if (data.error || !data.access_token) {
-        return new Response(`Erro OAuth: ${data.error_description || 'desconhecido'}`, {
-          status: 400,
-        });
+        return new Response(
+          `Erro OAuth: ${data.error_description || 'desconhecido'}`,
+          { status: 400 }
+        );
       }
 
-      // Retorna o token ao Decap CMS via postMessage (padrão do CMS)
       const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"/></head>
@@ -71,9 +57,11 @@ export default {
   (function() {
     const token   = ${JSON.stringify(data.access_token)};
     const message = JSON.stringify({ token, provider: 'github' });
-    // postMessage para a janela pai (o painel CMS)
     if (window.opener) {
-      window.opener.postMessage('authorization:github:success:' + message, ${JSON.stringify(env.ALLOWED_ORIGIN)});
+      window.opener.postMessage(
+        'authorization:github:success:' + message,
+        ${JSON.stringify(ORIGIN)}
+      );
     }
     window.close();
   })();
@@ -84,8 +72,8 @@ export default {
 
       return new Response(html, {
         headers: {
-          'Content-Type': 'text/html;charset=UTF-8',
-          'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN,
+          'Content-Type':                'text/html;charset=UTF-8',
+          'Access-Control-Allow-Origin': ORIGIN,
         },
       });
     }
