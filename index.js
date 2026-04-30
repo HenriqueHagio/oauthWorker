@@ -78,6 +78,9 @@ export default {
       });
     }
 
-    return new Response('Not found', { status: 404 });
+    return new Response(
+      `Not found: ${url.pathname}`,
+      { status: 404 }
+    );
   },
 };
