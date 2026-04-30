@@ -1,0 +1,20 @@
+{
+  // oauth-worker/wrangler.jsonc
+  // Worker separado que faz o OAuth do GitHub para o Decap CMS.
+  // Deploy: cd oauth-worker && npx wrangler deploy
+
+  "name": "atelier-oauth",
+  "main": "index.js",
+  "compatibility_date": "2024-01-01",
+
+  // Rotas que este worker vai interceptar no domínio do site
+  "routes": [
+    { "pattern": "seusite.com/oauth/*", "zone_name": "seusite.com" }
+  ]
+
+  // Variáveis secretas — NÃO coloque os valores aqui.
+  // Cadastre via CLI:
+  //   npx wrangler secret put GITHUB_CLIENT_ID
+  //   npx wrangler secret put GITHUB_CLIENT_SECRET
+  //   npx wrangler secret put ALLOWED_ORIGIN
+}
