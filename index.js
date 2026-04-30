@@ -9,7 +9,7 @@ export default {
     const url = new URL(request.url);
 
     // GET /auth/authorize → inicia OAuth
-    if (url.pathname === '/auth/authorize') {
+    if (url.pathname.startsWith('/auth/authorize')) {
       const params = new URLSearchParams({
         client_id:    env.GITHUB_CLIENT_ID,
         scope:        SCOPE,
